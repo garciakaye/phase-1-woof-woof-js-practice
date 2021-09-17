@@ -24,10 +24,6 @@ function fetchGoodDogs(){
     .then((response) => response.json())
 }
 
-function fetchPup(id){
-    return fetch(`${PUPS_ROUTE}/${id}`).then((response) => response.json())
-}
-
 
 function getDogType(isGoodDog){
     return isGoodDog ? 'Good Dog!' : 'Bad Dog!'
@@ -35,7 +31,7 @@ function getDogType(isGoodDog){
 
 
 //this function creates the elements in the dog summary
-function createDogSummaryElements(dog){
+function createDisplayElements(dog){
     const image = document.createElement('img')
     const heading = document.createElement('h2')
     const button = document.createElement('button') 
@@ -45,44 +41,46 @@ function createDogSummaryElements(dog){
     return [image, heading, button]
 }
 
-function createTitleElement(dog){
+function createTitle(dog){
     const {name} = dog
     const element = document.createElement('span')
     element.innerText = name
     return element
 }
 
-function setDisplay(dog){
-    const container = document.getElementById('dog-info')
-    container.innerHTML = ''
-    const summaryElements = createDogSummaryElements(dog)
-    summaryElements.forEach((child) => {
-        container.appendChild(child)
-    })
+function renderNavBar(dogs){
+    const titleContainer = document.getElementById('dog-bar')
+    const displayContainer = document.getElementById('dog-info')
 
-    const button = summaryElements[2]
-
-    button.addEventListener('click',() => { 
-         fetchPup(dog.id).then((data) => {
-            const {isGoodDog,id} = data
-            patchPups(id, {isGoodDog:!isGoodDog}).then((updatedDog) => {
-                button.innerText = getDogType(updatedDog.isGoodDog)
-            }) 
-        })
-       
-    })
-}
-
-function setNavBar(dogs){
-    const container = document.getElementById('dog-bar')
-    container.innerHTML = '' 
+    titleContainer.innerHTML = '' 
     dogs.forEach((dog) => {
-        const title = createTitleElement(dog)
-        container.appendChild(title)
+        /*
+            each dog will be:
+             {
+                "id": 1,
+                "name": "Mr. Bonkers",
+                "isGoodDog": true,
+                "image": "https://curriculum-content.s3.amazonaws.com/js/woof-woof/dog_1.jpg"
+            },
+        */
+        const title = createTitle(dog)
 
-        title.addEventListener('click',(event) => {
-            fetchPup(dog.id).then((data) => {
-                setDisplay(data)
+        titleContainer.appendChild(title)
+    
+        title.addEventListener('click',() => {
+            displayContainer.innerHTML = ''
+            const elements = createDisplayElements(dog)
+            
+            const button = elements[2]
+           
+            elements.forEach((element) => {
+                displayContainer.appendChild(element)
+            })
+    
+            button.addEventListener('click',() => {
+                patchPups(dog.id, {isGoodDog:!dog.isGoodDog}).then((data) => {
+                  button.innerText = getDogType(data.isGoodDog)
+                }) 
             })
         })
     })
@@ -93,8 +91,6 @@ function getDogFilterText(isFiltered){
 }
 
 
-
-
 function initialize(){
     const filterButton = document.getElementById('good-dog-filter')
     let isFiltered = false
@@ -103,11 +99,11 @@ function initialize(){
        
         if(isFiltered){
             fetchGoodDogs().then((goodDogData) => {
-                setNavBar(goodDogData)
+                renderNavBar(goodDogData)
             })
         }else{
             fetchPups().then((allDogData) => {
-                setNavBar(allDogData)
+                renderNavBar(allDogData)
             })
         }
     }
@@ -130,7 +126,7 @@ initialize()
 /* initial state 
 -> side effect (fetch pups) 
     -> success 
-        -> new state: ui loads spans with dog names (adds click events to create summary display)
+        -> new state: ui loads spans with dog names (adds click events to create sumary display)
             -> side effect (click button, send request based id)
                 -> success
                     -> new state: update display with pertinent info about dog
